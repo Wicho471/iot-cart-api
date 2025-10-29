@@ -53,77 +53,73 @@ public class IotEventServiceImpl implements IotEventService {
 
     /**
      * {@inheritDoc}
+     * CORRECCIÓN: Firma actualizada para aceptar ipCliente
      */
     @Override
     @Transactional
-    public Long registrarMovimiento(MovimientoRequest request) {
+    public Long registrarMovimiento(MovimientoRequest request, String ipCliente) {
         log.debug("Iniciando registro de movimiento para el dispositivo: {}", request.getNombreDispositivo());
         try {
             Long eventoId = iotRepository.agregarMovimiento(
                     request.getNombreDispositivo(),
                     request.getCodigoOperacion(),
-                    request.getIpCliente(),
+                    ipCliente, // <-- CORRECCIÓN: Usar la IP del parámetro
                     request.getPais(),
                     request.getCiudad(),
                     request.getLatitud(),
                     request.getLongitud()
             );
 
+            // ... (resto del método sin cambios)
             log.info("Movimiento registrado con éxito. Evento ID: {}", eventoId);
-
-            // Notificar vía WebSocket (Push)
             broadcastNotification(EVENT_TYPE_MOVIMIENTO, request);
-            
             return eventoId;
 
         } catch (Exception e) {
-            // Regla f: Registrar detalladamente la excepción inesperada
             log.error("Error inesperado al intentar registrar movimiento para [Dispositivo: {}, Operación: {}, IP: {}]",
-                    request.getNombreDispositivo(), request.getCodigoOperacion(), request.getIpCliente(), e);
-            // Re-lanzamos como RuntimeException para que el GlobalExceptionHandler la capture
-            // y asegure el rollback transaccional.
+                    request.getNombreDispositivo(), request.getCodigoOperacion(), ipCliente, e); // <-- CORRECCIÓN: Log con la IP correcta
             throw new RuntimeException("Error de base de datos al registrar movimiento.", e);
         }
     }
 
     /**
      * {@inheritDoc}
+     * CORRECCIÓN: Firma actualizada para aceptar ipCliente
      */
     @Override
     @Transactional
-    public Long registrarObstaculo(ObstaculoRequest request) {
+    public Long registrarObstaculo(ObstaculoRequest request, String ipCliente) {
         log.debug("Iniciando registro de obstáculo para el dispositivo: {}", request.getNombreDispositivo());
         try {
             Long eventoId = iotRepository.agregarObstaculo(
                     request.getNombreDispositivo(),
                     request.getCodigoObstaculo(),
-                    request.getIpCliente(),
+                    ipCliente, // <-- CORRECCIÓN: Usar la IP del parámetro
                     request.getPais(),
                     request.getCiudad(),
                     request.getLatitud(),
                     request.getLongitud()
             );
-
-            log.info("Obstáculo registrado con éxito. Evento ID: {}", eventoId);
             
-            // Notificar vía WebSocket (Push)
+            // ... (resto del método sin cambios)
+            log.info("Obstáculo registrado con éxito. Evento ID: {}", eventoId);
             broadcastNotification(EVENT_TYPE_OBSTACULO, request);
-
             return eventoId;
 
         } catch (Exception e) {
             log.error("Error inesperado al intentar registrar obstáculo para [Dispositivo: {}, Obstáculo: {}, IP: {}]",
-                    request.getNombreDispositivo(), request.getCodigoObstaculo(), request.getIpCliente(), e);
+                    request.getNombreDispositivo(), request.getCodigoObstaculo(), ipCliente, e); // <-- CORRECCIÓN: Log con la IP correcta
             throw new RuntimeException("Error de base de datos al registrar obstáculo.", e);
         }
     }
 
     /**
      * {@inheritDoc}
+     * CORRECCIÓN: Firma actualizada para aceptar ipCliente
      */
     @Override
     @Transactional
-    public void ejecutarSecuenciaDemo(EjecutarSecuenciaRequest request) {
+    public void ejecutarSecuenciaDemo(EjecutarSecuenciaRequest request, String ipCliente) {
         log.debug("Iniciando ejecución de secuencia DEMO [ID: {}] para [Dispositivo: {}]",
                 request.getIdSecuencia(), request.getNombreDispositivo());
         
@@ -131,20 +127,15 @@ public class IotEventServiceImpl implements IotEventService {
             iotRepository.ejecutarSecuenciaDemo(
                     request.getIdSecuencia(),
                     request.getNombreDispositivo(),
-                    request.getIpCliente(),
+                    ipCliente, // <-- CORRECCIÓN: Usar la IP del parámetro
                     request.getPais(),
                     request.getCiudad(),
                     request.getLatitud(),
                     request.getLongitud()
             );
             
+            // ... (resto del método sin cambios)
             log.info("Secuencia DEMO [ID: {}] ejecutada en la base de datos.", request.getIdSecuencia());
-            
-            // Notificación Push:
-            // El SP 'sp_ejecutar_secuencia_demo' encapsula la lógica y llama a 'sp_agregar_movimiento'
-            // internamente en la BD. Por lo tanto, no podemos emitir un push por *cada paso*.
-            // Emitimos una sola notificación informando que la secuencia *completa* se disparó.
-            // La app de monitoreo puede usar esto como señal para refrescar sus datos (ej. llamar a 'obtenerUltimosMovimientos').
             broadcastNotification(EVENT_TYPE_SECUENCIA_COMPLETADA, request);
 
         } catch (Exception e) {

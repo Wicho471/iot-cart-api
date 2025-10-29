@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString; 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -47,12 +48,12 @@ public class IotControlControllerTest {
         MovimientoRequest request = new MovimientoRequest();
         request.setNombreDispositivo("ROVER-TEST");
         request.setCodigoOperacion("ADELANTE");
-        request.setIpCliente("127.0.0.1");
+        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
         
         Long expectedEventId = 123L;
         
-        // Definir el comportamiento del mock
-        when(iotEventService.registrarMovimiento(any(MovimientoRequest.class)))
+        // CORRECCIÓN: Actualizar la firma del mock para incluir 'anyString()' para la IP
+        when(iotEventService.registrarMovimiento(any(MovimientoRequest.class), anyString()))
                 .thenReturn(expectedEventId);
 
         // Act & Assert
@@ -72,11 +73,12 @@ public class IotControlControllerTest {
         ObstaculoRequest request = new ObstaculoRequest();
         request.setNombreDispositivo("ROVER-TEST");
         request.setCodigoObstaculo("OBS_ADELANTE");
-        request.setIpCliente("127.0.0.1");
+        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
 
         Long expectedEventId = 456L;
 
-        when(iotEventService.registrarObstaculo(any(ObstaculoRequest.class)))
+        // CORRECCIÓN: Actualizar la firma del mock
+        when(iotEventService.registrarObstaculo(any(ObstaculoRequest.class), anyString()))
                 .thenReturn(expectedEventId);
 
         // Act & Assert
@@ -89,6 +91,7 @@ public class IotControlControllerTest {
 
     /**
      * Prueba el endpoint POST /api/v1/iot/control/secuencia
+     * (Este método no cambió, la prueba sigue igual)
      */
     @Test
     public void testCrearSecuenciaDemo() throws Exception {
@@ -119,14 +122,14 @@ public class IotControlControllerTest {
         EjecutarSecuenciaRequest request = new EjecutarSecuenciaRequest();
         request.setIdSecuencia(1);
         request.setNombreDispositivo("ROVER-TEST");
-        request.setIpCliente("127.0.0.1");
+        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
         request.setPais("México");
         request.setCiudad("CDMX");
         request.setLatitud(BigDecimal.valueOf(19.4326));
         request.setLongitud(BigDecimal.valueOf(-99.1332));
         
-        // El método de servicio es void, así que usamos doNothing
-        doNothing().when(iotEventService).ejecutarSecuenciaDemo(any(EjecutarSecuenciaRequest.class));
+        // CORRECCIÓN: Actualizar la firma del mock
+        doNothing().when(iotEventService).ejecutarSecuenciaDemo(any(EjecutarSecuenciaRequest.class), anyString());
 
         // Act & Assert
         mockMvc.perform(post("/api/v1/iot/control/secuencia/ejecutar")

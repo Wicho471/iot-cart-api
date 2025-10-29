@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 @Setter
 public class EventoBaseRequest {
 	private String nombreDispositivo;
-	private String ipCliente;
 	private String pais;
 	private String ciudad;
 	private BigDecimal latitud;

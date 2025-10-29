@@ -11,18 +11,21 @@ public interface IotEventService {
 
     /**
      * Registra un evento de movimiento y notifica vía WebSocket.
+     * CORRECCIÓN: Se añade ipCliente como parámetro.
      */
-    Long registrarMovimiento(MovimientoRequest request);
+    Long registrarMovimiento(MovimientoRequest request, String ipCliente);
 
     /**
      * Registra un evento de obstáculo y notifica vía WebSocket.
+     * CORRECCIÓN: Se añade ipCliente como parámetro.
      */
-    Long registrarObstaculo(ObstaculoRequest request);
+    Long registrarObstaculo(ObstaculoRequest request, String ipCliente);
 
     /**
      * Ejecuta una secuencia DEMO y notifica vía WebSocket.
+     * CORRECCIÓN: Se añade ipCliente como parámetro.
      */
-    void ejecutarSecuenciaDemo(EjecutarSecuenciaRequest request);
+    void ejecutarSecuenciaDemo(EjecutarSecuenciaRequest request, String ipCliente);
 
     /**
      * Crea una nueva secuencia DEMO.
