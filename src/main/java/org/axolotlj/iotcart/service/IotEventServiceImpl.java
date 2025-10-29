@@ -176,7 +176,7 @@ public class IotEventServiceImpl implements IotEventService {
      * {@inheritDoc}
      */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<UltimosMovimientosDto> obtenerUltimosMovimientos(String nombreDispositivo, int limite) {
         log.debug("Consultando últimos {} movimientos para: {}", limite, nombreDispositivo);
         try {
@@ -206,7 +206,7 @@ public class IotEventServiceImpl implements IotEventService {
      * {@inheritDoc}
      */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<UltimasSecuenciasDto> obtenerUltimasSecuenciasDemo() {
         log.debug("Consultando últimas secuencias DEMO");
         try {

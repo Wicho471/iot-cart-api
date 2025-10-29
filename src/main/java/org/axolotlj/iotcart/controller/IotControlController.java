@@ -1,5 +1,7 @@
 package org.axolotlj.iotcart.controller;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.axolotlj.iotcart.dto.request.EjecutarSecuenciaRequest;
 import org.axolotlj.iotcart.dto.request.MovimientoRequest;
 import org.axolotlj.iotcart.dto.request.ObstaculoRequest;
@@ -15,59 +17,83 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controlador REST para las operaciones de control (escritura) del dispositivo IoT.
- * Corresponde a los SPs que insertan datos.
+ * Controlador REST para las operaciones de control (escritura) del dispositivo
+ * IoT. Corresponde a los SPs que insertan datos.
  */
 @RestController
 @RequestMapping("/api/v1/iot/control")
 public class IotControlController {
 
-    private final IotEventService iotEventService;
+	private static final Logger log = LogManager.getLogger(IotControlController.class);
 
-    /**
-     * Inyecta el servicio de eventos.
-     */
-    @Autowired
-    public IotControlController(IotEventService iotEventService) {
-        this.iotEventService = iotEventService;
-    }
+	private final IotEventService iotEventService;
 
-    /**
-     * Endpoint para registrar un nuevo movimiento (SP a).
-     * Esto disparará una notificación WebSocket.
-     */
-    @PostMapping("/movimiento")
-    public ResponseEntity<IdResponse> registrarMovimiento(@RequestBody MovimientoRequest request) {
-        Long id = iotEventService.registrarMovimiento(request);
-        return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
-    }
+	/**
+	 * Inyecta el servicio de eventos.
+	 */
+	@Autowired
+	public IotControlController(IotEventService iotEventService) {
+		this.iotEventService = iotEventService;
+	}
 
-    /**
-     * Endpoint para registrar un nuevo obstáculo (SP g).
-     * Esto disparará una notificación WebSocket.
-     */
-    @PostMapping("/obstaculo")
-    public ResponseEntity<IdResponse> registrarObstaculo(@RequestBody ObstaculoRequest request) {
-        Long id = iotEventService.registrarObstaculo(request);
-        return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
-    }
+	/**
+	 * Endpoint para registrar un nuevo movimiento (SP a). Esto disparará una
+	 * notificación WebSocket.
+	 */
+	@PostMapping("/movimiento")
+	public ResponseEntity<IdResponse> registrarMovimiento(@RequestBody MovimientoRequest request) {
+		log.info("Endpoint /movimiento invocado por dispositivo: {}", request.getNombreDispositivo());
+		// Usamos DEBUG para el payload completo (Regla e: detallado)
+		log.debug("Payload de registrarMovimiento: {}", request::toString);
 
-    /**
-     * Endpoint para crear una nueva secuencia DEMO (SP d).
-     */
-    @PostMapping("/secuencia")
-    public ResponseEntity<IdResponse> crearSecuenciaDemo(@RequestBody SecuenciaDemoRequest request) {
-        Integer id = iotEventService.crearSecuenciaDemo(request);
-        return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
-    }
+		Long id = iotEventService.registrarMovimiento(request);
 
-    /**
-     * Endpoint para ejecutar una secuencia DEMO existente (SP f).
-     * Esto disparará una notificación WebSocket de "SECUENCIA_COMPLETADA".
-     */
-    @PostMapping("/secuencia/ejecutar")
-    public ResponseEntity<Void> ejecutarSecuenciaDemo(@RequestBody EjecutarSecuenciaRequest request) {
-        iotEventService.ejecutarSecuenciaDemo(request);
-        return ResponseEntity.ok().build();
-    }
+		log.info("Movimiento registrado con éxito. Nuevo ID de evento: {}", id);
+		return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
+	}
+
+	/**
+	 * Endpoint para registrar un nuevo obstáculo (SP g). Esto disparará una
+	 * notificación WebSocket.
+	 */
+	@PostMapping("/obstaculo")
+	public ResponseEntity<IdResponse> registrarObstaculo(@RequestBody ObstaculoRequest request) {
+		log.info("Endpoint /obstaculo invocado por dispositivo: {}", request.getNombreDispositivo());
+		log.debug("Payload de registrarObstaculo: {}", request::toString);
+
+		Long id = iotEventService.registrarObstaculo(request);
+
+		log.info("Obstáculo registrado con éxito. Nuevo ID de evento: {}", id);
+		return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
+	}
+
+	/**
+	 * Endpoint para crear una nueva secuencia DEMO (SP d).
+	 */
+	@PostMapping("/secuencia")
+	public ResponseEntity<IdResponse> crearSecuenciaDemo(@RequestBody SecuenciaDemoRequest request) {
+		log.info("Endpoint /secuencia (crear) invocado.");
+		log.debug("Payload de crearSecuenciaDemo: {}", request::toString);
+
+		Integer id = iotEventService.crearSecuenciaDemo(request);
+
+		log.info("Secuencia DEMO creada con éxito. Nuevo ID de secuencia: {}", id);
+		return new ResponseEntity<>(new IdResponse(id), HttpStatus.CREATED);
+	}
+
+	/**
+	 * Endpoint para ejecutar una secuencia DEMO existente (SP f). Esto disparará
+	 * una notificación WebSocket de "SECUENCIA_COMPLETADA".
+	 */
+	@PostMapping("/secuencia/ejecutar")
+	public ResponseEntity<Void> ejecutarSecuenciaDemo(@RequestBody EjecutarSecuenciaRequest request) {
+		log.info("Endpoint /secuencia/ejecutar invocado para Secuencia ID: {} por Dispositivo: {}",
+				request.getIdSecuencia(), request.getNombreDispositivo());
+		log.debug("Payload de ejecutarSecuenciaDemo: {}", request::toString);
+
+		iotEventService.ejecutarSecuenciaDemo(request);
+
+		log.info("Ejecución de secuencia (ID: {}) solicitada con éxito.", request.getIdSecuencia());
+		return ResponseEntity.ok().build();
+	}
 }
