@@ -1,6 +1,16 @@
 package org.axolotlj.iotcart.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.math.BigDecimal;
+
 import org.axolotlj.iotcart.dto.request.EjecutarSecuenciaRequest;
 import org.axolotlj.iotcart.dto.request.MovimientoRequest;
 import org.axolotlj.iotcart.dto.request.ObstaculoRequest;
@@ -13,128 +23,108 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString; 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Pruebas unitarias para IotControlController.
- * Utiliza @WebMvcTest para probar solo la capa web, mockeando el servicio.
+ * Pruebas unitarias para IotControlController. Actualizadas para esperar el
+ * formato ApiResponse { success, data, error }.
  */
 @WebMvcTest(IotControlController.class)
 public class IotControlControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper; // Para convertir DTOs a JSON
+	@Autowired
+	private ObjectMapper objectMapper;
 
-    @MockBean
-    private IotEventService iotEventService;
+	@MockBean
+	private IotEventService iotEventService;
 
-    /**
-     * Prueba el endpoint POST /api/v1/iot/control/movimiento
-     */
-    @Test
-    public void testRegistrarMovimiento() throws Exception {
-        // Arrange
-        MovimientoRequest request = new MovimientoRequest();
-        request.setNombreDispositivo("ROVER-TEST");
-        request.setCodigoOperacion("ADELANTE");
-        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
-        
-        Long expectedEventId = 123L;
-        
-        // CORRECCIÓN: Actualizar la firma del mock para incluir 'anyString()' para la IP
-        when(iotEventService.registrarMovimiento(any(MovimientoRequest.class), anyString()))
-                .thenReturn(expectedEventId);
+	/**
+	 * Prueba el endpoint POST /api/v1/iot/control/movimiento
+	 */
+	@Test
+	public void testRegistrarMovimiento() throws Exception {
+		// Arrange
+		MovimientoRequest request = new MovimientoRequest();
+		request.setNombreDispositivo("ROVER-TEST");
+		request.setCodigoOperacion("ADELANTE");
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/iot/control/movimiento")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated()) // Espera HTTP 201
-                .andExpect(jsonPath("$.id").value(expectedEventId)); // Verifica el ID en el JSON de respuesta
-    }
+		Long expectedEventId = 123L;
 
-    /**
-     * Prueba el endpoint POST /api/v1/iot/control/obstaculo
-     */
-    @Test
-    public void testRegistrarObstaculo() throws Exception {
-        // Arrange
-        ObstaculoRequest request = new ObstaculoRequest();
-        request.setNombreDispositivo("ROVER-TEST");
-        request.setCodigoObstaculo("OBS_ADELANTE");
-        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
+		when(iotEventService.registrarMovimiento(any(MovimientoRequest.class), anyString()))
+				.thenReturn(expectedEventId);
 
-        Long expectedEventId = 456L;
+		// Act & Assert
+		mockMvc.perform(post("/api/v1/iot/control/movimiento").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated()) // Espera HTTP 201
+				.andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+				.andExpect(jsonPath("$.data.id").value(expectedEventId)); // Verificar el ID anidado
+	}
 
-        // CORRECCIÓN: Actualizar la firma del mock
-        when(iotEventService.registrarObstaculo(any(ObstaculoRequest.class), anyString()))
-                .thenReturn(expectedEventId);
+	/**
+	 * Prueba el endpoint POST /api/v1/iot/control/obstaculo
+	 */
+	@Test
+	public void testRegistrarObstaculo() throws Exception {
+		// Arrange
+		ObstaculoRequest request = new ObstaculoRequest();
+		request.setNombreDispositivo("ROVER-TEST");
+		request.setCodigoObstaculo("OBS_ADELANTE");
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/iot/control/obstaculo")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(expectedEventId));
-    }
+		Long expectedEventId = 456L;
 
-    /**
-     * Prueba el endpoint POST /api/v1/iot/control/secuencia
-     * (Este método no cambió, la prueba sigue igual)
-     */
-    @Test
-    public void testCrearSecuenciaDemo() throws Exception {
-        // Arrange
-        SecuenciaDemoRequest request = new SecuenciaDemoRequest();
-        request.setNombreSecuencia("Prueba de Secuencia");
-        request.setCantidadMovimientos(5);
+		when(iotEventService.registrarObstaculo(any(ObstaculoRequest.class), anyString())).thenReturn(expectedEventId);
 
-        Integer expectedSequenceId = 789;
+		// Act & Assert
+		mockMvc.perform(post("/api/v1/iot/control/obstaculo").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated())
+				.andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+				.andExpect(jsonPath("$.data.id").value(expectedEventId)); // Verificar el ID anidado
+	}
 
-        when(iotEventService.crearSecuenciaDemo(any(SecuenciaDemoRequest.class)))
-                .thenReturn(expectedSequenceId);
+	/**
+	 * Prueba el endpoint POST /api/v1/iot/control/secuencia
+	 */
+	@Test
+	public void testCrearSecuenciaDemo() throws Exception {
+		// Arrange
+		SecuenciaDemoRequest request = new SecuenciaDemoRequest();
+		request.setNombreSecuencia("Prueba de Secuencia");
+		request.setCantidadMovimientos(5);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/iot/control/secuencia")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(expectedSequenceId));
-    }
+		Integer expectedSequenceId = 789;
 
-    /**
-     * Prueba el endpoint POST /api/v1/iot/control/secuencia/ejecutar
-     */
-    @Test
-    public void testEjecutarSecuenciaDemo() throws Exception {
-        // Arrange
-        EjecutarSecuenciaRequest request = new EjecutarSecuenciaRequest();
-        request.setIdSecuencia(1);
-        request.setNombreDispositivo("ROVER-TEST");
-        // request.setIpCliente("127.0.0.1"); // <-- CORRECCIÓN: Eliminado
-        request.setPais("México");
-        request.setCiudad("CDMX");
-        request.setLatitud(BigDecimal.valueOf(19.4326));
-        request.setLongitud(BigDecimal.valueOf(-99.1332));
-        
-        // CORRECCIÓN: Actualizar la firma del mock
-        doNothing().when(iotEventService).ejecutarSecuenciaDemo(any(EjecutarSecuenciaRequest.class), anyString());
+		when(iotEventService.crearSecuenciaDemo(any(SecuenciaDemoRequest.class))).thenReturn(expectedSequenceId);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/iot/control/secuencia/ejecutar")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()); // Espera HTTP 200
-    }
+		// Act & Assert
+		mockMvc.perform(post("/api/v1/iot/control/secuencia").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated())
+				.andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+				.andExpect(jsonPath("$.data.id").value(expectedSequenceId)); // Verificar el ID anidado
+	}
+
+	/**
+	 * Prueba el endpoint POST /api/v1/iot/control/secuencia/ejecutar
+	 */
+	@Test
+	public void testEjecutarSecuenciaDemo() throws Exception {
+		// Arrange
+		EjecutarSecuenciaRequest request = new EjecutarSecuenciaRequest();
+		request.setIdSecuencia(1);
+		request.setNombreDispositivo("ROVER-TEST");
+		request.setPais("México");
+		request.setCiudad("CDMX");
+		request.setLatitud(BigDecimal.valueOf(19.4326));
+		request.setLongitud(BigDecimal.valueOf(-99.1332));
+
+		doNothing().when(iotEventService).ejecutarSecuenciaDemo(any(EjecutarSecuenciaRequest.class), anyString());
+
+		// Act & Assert
+		mockMvc.perform(post("/api/v1/iot/control/secuencia/ejecutar").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isOk()) // Espera HTTP 200
+				.andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+				.andExpect(jsonPath("$.data").doesNotExist()); // No debe haber payload 'data'
+	}
 }

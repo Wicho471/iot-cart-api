@@ -2,20 +2,31 @@
 <Configuration status="WARN" monitorInterval="30">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss}] [%t/%level] (%logger{64}:%L) - %msg%n"/>
-        </Console>
+			<PatternLayout pattern="%highlight{[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t/%-5level] [%logger -> %M:%L]: %msg%n}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan}" disableAnsi="false" />        
+		</Console>
+		<RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz" immediateFlush="true">
+			<PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t/%level] [%logger -> %M:%L]: %msg%n"/>        
+            
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5MB"/>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy /> 
+            </Policies>
+            
+            <DefaultRolloverStrategy max="20"/>
+        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
-        <Logger name="org.axolotlj.iotcart" level="DEBUG" additivity="false">
+        <Logger name="org.axolotlj" level="DEBUG" additivity="false">
             <AppenderRef ref="Console"/>
-        </Logger>
+            <AppenderRef ref="File"/> </Logger>
 
         <Logger name="org.springframework" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
-        </Logger>
+            <AppenderRef ref="File"/> </Logger>
         
         <Root level="WARN">
             <AppenderRef ref="Console"/>
-        </Root>
+            <AppenderRef ref="File"/> </Root>
     </Loggers>
 </Configuration>

@@ -1,6 +1,7 @@
 package org.axolotlj.iotcart.websocket;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -56,7 +57,11 @@ public class IotEventSocketHandler extends TextWebSocketHandler {
 	 */
 	@Override
 	public void handleTransportError(WebSocketSession session, Throwable exception) {
-		log.error("Error de transporte en WebSocket: [ID: {}]", session.getId(), exception);
+		if (exception instanceof ClosedChannelException) {
+			log.warn("Ws cerrado incorrectamente");
+			return;
+		}
+		log.error("Error de transporte en WebSocket: [ID: {}]", session.getId());
 	}
 
 	/**

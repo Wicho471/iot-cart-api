@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Pruebas unitarias para IotQueryController.
- * Utiliza @WebMvcTest para probar solo la capa web, mockeando el servicio.
+ * Actualizadas para esperar el formato ApiResponse { success, data, error }.
  */
 @WebMvcTest(IotQueryController.class)
 public class IotQueryControllerTest {
@@ -38,24 +38,18 @@ public class IotQueryControllerTest {
     @MockBean
     private IotEventService iotEventService;
 
-    /**
-     * Prueba el endpoint GET /api/v1/iot/query/movimiento/{dispositivoNombre}
-     */
+    // ... (testGetUltimosMovimientos y testGetUltimosObstaculos sin cambios) ...
     @Test
     public void testGetUltimosMovimientos() throws Exception {
         // Arrange
         String dispositivo = "ROVER-CURIOSITY";
         int limite = 5;
 
-        // --- INICIO DE CORRECCIÓN ---
-        // No podemos usar 'new' en una interfaz. Usamos Mockito.
         UltimosMovimientosDto mockMovimiento = Mockito.mock(UltimosMovimientosDto.class);
-        // Definimos lo que devuelve cada "getter"
         when(mockMovimiento.getFecha_evento()).thenReturn(Timestamp.from(Instant.now()));
         when(mockMovimiento.getNombre_dispositivo()).thenReturn(dispositivo);
         when(mockMovimiento.getMovimiento()).thenReturn("Adelante");
         when(mockMovimiento.getIp_cliente()).thenReturn("192.168.1.100");
-        // --- FIN DE CORRECCIÓN ---
 
         List<UltimosMovimientosDto> mockList = Collections.singletonList(mockMovimiento);
 
@@ -68,27 +62,23 @@ public class IotQueryControllerTest {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1))) // Verifica que la respuesta es un array de tamaño 1
-                .andExpect(jsonPath("$[0].nombre_dispositivo", is(dispositivo)))
-                .andExpect(jsonPath("$[0].movimiento", is("Adelante")));
+                .andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+                .andExpect(jsonPath("$.data", hasSize(1))) // Verificar array anidado
+                .andExpect(jsonPath("$.data[0].nombre_dispositivo", is(dispositivo)))
+                .andExpect(jsonPath("$.data[0].movimiento", is("Adelante")));
     }
 
-    /**
-     * Prueba el endpoint GET /api/v1/iot/query/obstaculo/{dispositivoNombre}
-     */
     @Test
     public void testGetUltimosObstaculos() throws Exception {
         // Arrange
         String dispositivo = "DRON-INGENUITY";
         int limite = 2;
 
-        // --- INICIO DE CORRECCIÓN ---
         UltimosObstaculosDto mockObstaculo = Mockito.mock(UltimosObstaculosDto.class);
         when(mockObstaculo.getFecha_evento()).thenReturn(Timestamp.from(Instant.now()));
         when(mockObstaculo.getNombre_dispositivo()).thenReturn(dispositivo);
         when(mockObstaculo.getObstaculo_detectado()).thenReturn("Adelante-Derecha");
         when(mockObstaculo.getIp_cliente()).thenReturn("200.1.1.1");
-        // --- FIN DE CORRECCIÓN ---
 
         List<UltimosObstaculosDto> mockList = Collections.singletonList(mockObstaculo);
 
@@ -100,25 +90,27 @@ public class IotQueryControllerTest {
                 .param("limite", String.valueOf(limite))
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].nombre_dispositivo", is(dispositivo)))
-                .andExpect(jsonPath("$[0].obstaculo_detectado", is("Adelante-Derecha")));
+                .andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+                .andExpect(jsonPath("$.data", hasSize(1))) // Verificar array anidado
+                .andExpect(jsonPath("$.data[0].nombre_dispositivo", is(dispositivo)))
+                .andExpect(jsonPath("$.data[0].obstaculo_detectado", is("Adelante-Derecha")));
     }
+
 
     /**
      * Prueba el endpoint GET /api/v1/iot/query/secuencia
+     * ACTUALIZADO: Verifica que 'pasos' sea un arreglo.
      */
     @Test
     public void testGetUltimasSecuenciasDemo() throws Exception {
         // Arrange
-        // --- INICIO DE CORRECCIÓN ---
         UltimasSecuenciasDto mockSecuencia = Mockito.mock(UltimasSecuenciasDto.class);
         when(mockSecuencia.getId_secuencia()).thenReturn(1);
         when(mockSecuencia.getNombre_secuencia()).thenReturn("Secuencia de prueba");
         when(mockSecuencia.getFecha_creacion()).thenReturn(Timestamp.from(Instant.now()));
         when(mockSecuencia.getNumero_pasos()).thenReturn(3L);
+        // El servicio/repo sigue devolviendo un STRING
         when(mockSecuencia.getPasos()).thenReturn("Adelante -> Giro 90° derecha -> Detener");
-        // --- FIN DE CORRECCIÓN ---
 
         List<UltimasSecuenciasDto> mockList = Collections.singletonList(mockSecuencia);
 
@@ -128,20 +120,25 @@ public class IotQueryControllerTest {
         mockMvc.perform(get("/api/v1/iot/query/secuencia")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id_secuencia", is(1)))
-                .andExpect(jsonPath("$[0].nombre_secuencia", is("Secuencia de prueba")))
-                .andExpect(jsonPath("$[0].numero_pasos", is(3))); // JSONPath convierte Long a Integer aquí
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id_secuencia", is(1)))
+                .andExpect(jsonPath("$.data[0].nombre_secuencia", is("Secuencia de prueba")))
+                .andExpect(jsonPath("$.data[0].numero_pasos", is(3)))
+                // --- INICIO DE CORRECCIÓN ---
+                // Validar que 'pasos' es un arreglo
+                .andExpect(jsonPath("$.data[0].pasos", hasSize(3)))
+                .andExpect(jsonPath("$.data[0].pasos[0]", is("Adelante")))
+                .andExpect(jsonPath("$.data[0].pasos[1]", is("Giro 90° derecha")))
+                .andExpect(jsonPath("$.data[0].pasos[2]", is("Detener")));
+                // --- FIN DE CORRECCIÓN ---
     }
 
-    /**
-     * Prueba el endpoint GET /api/v1/iot/query/movimiento/{dispositivoNombre} con el límite por defecto.
-     */
     @Test
     public void testGetUltimosMovimientos_DefaultLimit() throws Exception {
         // Arrange
         String dispositivo = "ROVER-CURIOSITY";
-        int defaultLimite = 10; // Límite por defecto definido en el @RequestParam
+        int defaultLimite = 10; 
 
         List<UltimosMovimientosDto> mockList = Collections.emptyList();
 
@@ -152,6 +149,7 @@ public class IotQueryControllerTest {
         mockMvc.perform(get("/api/v1/iot/query/movimiento/{dispositivoNombre}", dispositivo)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.success", is(true))) // Verificar nueva estructura
+                .andExpect(jsonPath("$.data", hasSize(0))); // Verificar array anidado vacío
     }
 }

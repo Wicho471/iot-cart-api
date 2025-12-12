@@ -10,4 +10,5 @@ import lombok.Setter;
 @Setter
 public class EjecutarSecuenciaRequest extends EventoBaseRequest {
     private int idSecuencia;
+    private int velocidad;
 }

@@ -1,0 +1,4 @@
+keytool -genkeypair -alias iotcart -keyalg RSA -keysize 2048 \
+-storetype PKCS12 -keystore keystore.p12 -validity 3650 \
+-dname "CN=mi-lab, OU=Dev, O=AWS, L=Unknown, ST=Unknown, C=US" \
+-storepass password -keypass password
